@@ -149,11 +149,41 @@ def blk(name):
     return '/sys/class/block/' + name
 
 
+def sysfs_name(dev_path):
+    """Nombre real en /sys/block de un fichero de /dev, buscando por su
+    numero mayor:menor. En DSM /dev/mapper/cachedev_N no es un symlink
+    (es un nodo de dispositivo con otro nombre que el de /sys/block), asi
+    que resolver por ruta como con os.path.realpath() no funciona."""
+    try:
+        st = os.stat(dev_path)
+        link = '/sys/dev/block/%d:%d' % (os.major(st.st_rdev), os.minor(st.st_rdev))
+        return os.path.basename(os.path.realpath(link))
+    except OSError:
+        return os.path.basename(dev_path)
+
+
+def dm_deps(name):
+    """De que dispositivos depende uno de device-mapper (dmsetup deps),
+    para cuando /sys/block/<nombre>/slaves/ no esta poblado."""
+    for exe in ('dmsetup', '/sbin/dmsetup', '/usr/sbin/dmsetup'):
+        try:
+            out = subprocess.run([exe, 'deps', '-o', 'devname', name],
+                                 capture_output=True, text=True, timeout=10).stdout
+        except OSError:
+            continue
+        if out:
+            return re.findall(r'\(([^)]+)\)', out)
+    return []
+
+
 def slaves(name):
     try:
-        return sorted(os.listdir(blk(name) + '/slaves'))
+        s = sorted(os.listdir(blk(name) + '/slaves'))
+        if s:
+            return s
     except OSError:
-        return []
+        pass
+    return dm_deps(name)
 
 
 def leaves(name):
@@ -303,7 +333,7 @@ def main():
                'used': (vfs.f_blocks - vfs.f_bfree) * vfs.f_frsize,
                'raid': '', 'parts': []}
         if dev:
-            top = os.path.basename(os.path.realpath(dev))
+            top = sysfs_name(dev)
             vol['raid'] = '+'.join(sorted(raid_levels(top, set())))
             for part in leaves(top):
                 disk = parent_disk(part)

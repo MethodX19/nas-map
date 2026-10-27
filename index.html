@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mapa del NAS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>Mapa del NAS</h1>
+      <div class="meta"><span id="host"></span><span id="sample" class="badge">Datos de ejemplo</span><span id="err" class="err"></span></div>
+    </div>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Agrupar por">
+        <button id="v-disk" aria-pressed="true">Por disco</button>
+        <button id="v-vol" aria-pressed="false">Por volumen</button>
+      </div>
+      <label class="btn" for="hidefree" style="display:inline-flex;gap:7px;align-items:center"><input type="checkbox" id="hidefree" style="margin:0"> Ocultar libre</label>
+      <label class="btn" for="file">Cargar mi JSON</label>
+      <input id="file" type="file" accept=".json,application/json" hidden>
+    </div>
+  </div>
+
+  <div class="chassis" id="chassis" aria-label="Bahías"></div>
+
+  <div class="crumbs" id="crumbs"></div>
+  <div id="map" aria-label="Mapa de ocupación"></div>
+  <div id="info"><div class="nm">Pasa el ratón (o toca) un bloque para ver qué es. Haz clic para entrar en una carpeta.</div></div>
+  <div class="legend" id="legend"></div>
+
+  <div class="grid">
+    <section class="card">
+      <h2>Discos y lo que contienen</h2>
+      <div class="tbl"><table id="disks"></table></div>
+    </section>
+    <section class="card">
+      <h2>Analizar tu Synology</h2>
+      <ol class="steps">
+        <li>Activa SSH en DSM: Panel de control → Terminal y SNMP.</li>
+        <li>Descarga <code>nasmap.py</code> de este repositorio y súbelo al NAS con File Station (por ejemplo a tu carpeta <code>home</code>).</li>
+        <li>Conéctate por SSH y ejecútalo: <code>sudo python3 nasmap.py -o nasmap.json</code>. Solo lee; con muchos ficheros puede tardar unos minutos.</li>
+        <li>Descarga <code>nasmap.json</code> y cárgalo aquí con <b>Cargar mi JSON</b> o arrastrándolo al mapa. No se sube a ningún sitio: se procesa en tu navegador.</li>
+      </ol>
+      <p style="font-size:13px;color:var(--muted);margin:10px 0 0">Si DSM dice que no encuentra <code>python3</code>, instala “Python 3” desde el Centro de paquetes.</p>
+
+      <div class="auto">
+        <h3>Hazlo automático</h3>
+        <p class="lead">Dos formas de evitar el paso de subir el JSON a mano. Son independientes: monta la que te resulte más fácil en tu NAS.</p>
+
+        <details>
+          <summary>A · Mi NAS tiene su propio HTTPS (QuickConnect, DDNS…)</summary>
+          <ol class="steps" style="margin-top:10px">
+            <li>En Programador de tareas, crea una tarea <b>programada</b> (p. ej. diaria a las 3:00) que regenere el fichero: <code>python3 nasmap.py -o nasmap.json</code></li>
+            <li>Crea una segunda tarea, <b>desencadenada por el evento “Arranque”</b>, que lo sirva con cabecera CORS: <code>python3 nasmap.py --serve 8787 --out nasmap.json --token TU_CLAVE</code></li>
+            <li>En Panel de control → Portal de inicio de sesión → Avanzado → Proxy inverso, publica <code>localhost:8787</code> bajo tu dominio HTTPS.</li>
+            <li>Pega aquí esa URL, con tu clave al final:</li>
+          </ol>
+          <div class="autofield">
+            <input id="autourl" type="url" placeholder="https://tudominio.synology.me/nasmap.json?token=tuclave">
+            <select id="autoint" title="Frecuencia de comprobación">
+              <option value="0">Solo al abrir la página</option>
+              <option value="15">Revisar cada 15 min</option>
+              <option value="60">Revisar cada hora</option>
+            </select>
+            <button class="btn" id="autosave">Guardar y comprobar</button>
+          </div>
+          <p style="font-size:12px;color:var(--muted);margin:8px 0 0">El token es una protección ligera, no seguridad fuerte: cualquiera con la URL completa vería el listado de carpetas y tamaños (no el contenido de los ficheros). Si tu NAS puede restringir el proxy inverso por IP, hazlo también.</p>
+        </details>
+
+        <details id="fsrow">
+          <summary>B · Tengo una carpeta del NAS sincronizada en este PC</summary>
+          <p style="font-size:13px;color:var(--muted);margin:10px 0">Programa solo la tarea que regenera <code>nasmap.json</code> dentro de esa carpeta sincronizada (Synology Drive, unidad de red…). Luego vincula el fichero una vez: el navegador lo recuerda y lo vuelve a leer solo cada vez que abres esta página. Por seguridad del propio navegador, puede pedirte confirmarlo con un clic de vez en cuando.</p>
+          <div class="autofield">
+            <button class="btn" id="fspick">Vincular fichero local</button>
+            <button class="btn" id="fsreconnect" hidden>Reconectar fichero</button>
+          </div>
+        </details>
+
+        <p id="autostatus"></p>
+      </div>
+
+      <details style="margin-top:10px"><summary>Ver el script</summary>
+        <div class="autofield" style="margin-top:8px">
+          <button class="btn" id="copy">Copiar script</button>
+          <a class="btn" href="nasmap.py" download>Descargar nasmap.py</a>
+        </div>
+        <pre id="pycode">Cargando…</pre>
+      </details>
+    </section>
+  </div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

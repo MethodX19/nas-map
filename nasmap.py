@@ -46,8 +46,8 @@ def read(path):
 
 
 class Scanner:
-    def __init__(self, dev, depth, min_file):
-        self.dev, self.depth, self.min_file = dev, depth, min_file
+    def __init__(self, skip, depth, min_file):
+        self.skip, self.depth, self.min_file = skip, depth, min_file
         self.seen = set()
         self.files = 0
         self.errors = 0
@@ -82,7 +82,7 @@ class Scanner:
                     self.err(de.path, e)
                     continue
                 if stat.S_ISDIR(st.st_mode):
-                    if st.st_dev != self.dev:
+                    if de.path in self.skip:
                         continue
                     kid = self.scan(de.path, de.name, level + 1, system or is_sys(de.name))
                     if system or is_sys(de.name):
@@ -248,6 +248,24 @@ def all_disks():
     return out
 
 
+def other_mounts(root):
+    """Puntos de montaje reales dentro de root (algo montado aparte,
+    como un NFS/USB metido dentro de una carpeta compartida), para
+    no cruzar a ellos. No vale comparar st_dev: en Btrfs cada
+    subvolumen (cada carpeta compartida) tiene un st_dev distinto al
+    del volumen aunque sea el mismo disco y no un montaje aparte."""
+    root = root.rstrip('/')
+    out = set()
+    for line in read('/proc/mounts').splitlines():
+        parts = line.split()
+        if len(parts) < 2:
+            continue
+        mnt = parts[1]
+        if mnt != root and (mnt + '/').startswith(root + '/'):
+            out.add(mnt)
+    return out
+
+
 def volume_mounts(only):
     vols = []
     for line in read('/proc/mounts').splitlines():
@@ -326,7 +344,6 @@ def main():
     used_disks = set()
     for name, dev, mnt, fs in targets:
         sys.stderr.write('Escaneando %s ...\n' % mnt)
-        st = os.stat(mnt)
         vfs = os.statvfs(mnt)
         vol = {'id': name, 'mount': mnt, 'fs': fs,
                'total': vfs.f_blocks * vfs.f_frsize,
@@ -340,7 +357,7 @@ def main():
                 used_disks.add(disk)
                 vol['parts'].append({'disk': disk, 'part': part,
                                      'size': int(read(blk(part) + '/size') or 0) * 512})
-        sc = Scanner(st.st_dev, args.depth, args.min_file * 1024 * 1024)
+        sc = Scanner(other_mounts(mnt), args.depth, args.min_file * 1024 * 1024)
         tree = sc.scan(mnt, name, 0, False)
         sys.stderr.write('\r  %d ficheros, %d errores. Hecho.          \n' % (sc.files, sc.errors))
         min_size = max(vol['used'] * 0.0004, 32 * 1024 * 1024)

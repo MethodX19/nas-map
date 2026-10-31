@@ -96,6 +96,10 @@ td .sub{display:block;font-family:var(--mono);font-size:11px;color:var(--muted)}
 .bar i{display:block;height:100%}
 .pill{font-size:11px;padding:1px 7px;border-radius:99px;border:1px solid var(--line);white-space:nowrap;color:var(--muted)}
 .pill.warn{border-color:#d06b3f;color:#d06b3f}
+#errbadge{all:unset;cursor:pointer;font-size:11px;padding:2px 9px;border-radius:99px;border:1px solid #d06b3f;color:#d06b3f}
+#errbadge:hover{background:color-mix(in srgb,#d06b3f 12%,transparent)}
+#errpanel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:var(--mono);font-size:12px;color:var(--muted);max-height:220px;overflow:auto}
+#errpanel b{color:var(--ink);font-family:var(--body)}
 ol.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:14px}
 code,pre{font-family:var(--mono);font-size:12.5px}
 code{background:var(--frame);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}

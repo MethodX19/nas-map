@@ -13,7 +13,7 @@
   <div class="top">
     <div>
       <h1>Mapa del NAS</h1>
-      <div class="meta"><span id="host"></span><span id="sample" class="badge">Datos de ejemplo</span><span id="err" class="err"></span></div>
+      <div class="meta"><span id="host"></span><span id="sample" class="badge">Datos de ejemplo</span><button id="errbadge" hidden></button><span id="err" class="err"></span></div>
     </div>
     <div class="controls">
       <div class="seg" role="group" aria-label="Agrupar por">
@@ -26,6 +26,8 @@
       <input id="file" type="file" accept=".json,application/json" hidden>
     </div>
   </div>
+
+  <div id="errpanel" hidden></div>
 
   <div class="chassis" id="chassis" aria-label="Bahías"></div>
 

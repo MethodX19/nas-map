@@ -9,6 +9,7 @@ Opciones:
     --path /ruta            escanear una carpeta suelta (sin mapa de discos)
     --depth 7               niveles de carpetas que se guardan (el resto se agrupa)
     --min-file 256          ficheros de mas de N MB aparecen sueltos
+    --exclude @docker "#recycle"   nombres de carpeta a saltar (admite comodines, p.ej. "@*")
 
 Para que la pagina web se actualice sola (sin subir el JSON a mano),
 dos tareas en el Programador de tareas de DSM:
@@ -18,7 +19,7 @@ dos tareas en el Programador de tareas de DSM:
 
 Solo lee. No modifica nada salvo el fichero de salida.
 """
-import argparse, json, os, re, socket, stat, subprocess, sys, time
+import argparse, fnmatch, json, os, re, socket, stat, subprocess, sys, time
 
 CATS = {
     'video': 'mkv mp4 avi mov m4v wmv flv webm mpg mpeg ts m2ts vob 3gp rmvb divx',
@@ -46,8 +47,9 @@ def read(path):
 
 
 class Scanner:
-    def __init__(self, skip, depth, min_file):
+    def __init__(self, skip, depth, min_file, exclude=()):
         self.skip, self.depth, self.min_file = skip, depth, min_file
+        self.exclude = exclude
         self.seen = set()
         self.files = 0
         self.errors = 0
@@ -83,6 +85,8 @@ class Scanner:
                     continue
                 if stat.S_ISDIR(st.st_mode):
                     if de.path in self.skip:
+                        continue
+                    if self.exclude and any(fnmatch.fnmatch(de.name, pat) for pat in self.exclude):
                         continue
                     kid = self.scan(de.path, de.name, level + 1, system or is_sys(de.name))
                     if system or is_sys(de.name):
@@ -320,6 +324,8 @@ def main():
     ap.add_argument('--path', help='escanear una carpeta suelta')
     ap.add_argument('--depth', type=int, default=7)
     ap.add_argument('--min-file', type=int, default=256, help='MB')
+    ap.add_argument('--exclude', nargs='*', default=[],
+                     help='nombres de carpeta a saltar, admite comodines (p.ej. @docker "#recycle" "@*")')
     ap.add_argument('--serve', type=int, metavar='PORT',
                      help='no escanea: sirve el --out actual con cabecera CORS (usalo en una tarea "al arrancar")')
     ap.add_argument('--token', default='', help='clave que debe venir en la URL (?token=...) para servir el fichero')
@@ -357,7 +363,7 @@ def main():
                 used_disks.add(disk)
                 vol['parts'].append({'disk': disk, 'part': part,
                                      'size': int(read(blk(part) + '/size') or 0) * 512})
-        sc = Scanner(other_mounts(mnt), args.depth, args.min_file * 1024 * 1024)
+        sc = Scanner(other_mounts(mnt), args.depth, args.min_file * 1024 * 1024, args.exclude)
         tree = sc.scan(mnt, name, 0, False)
         sys.stderr.write('\r  %d ficheros, %d errores. Hecho.          \n' % (sc.files, sc.errors))
         min_size = max(vol['used'] * 0.0004, 32 * 1024 * 1024)

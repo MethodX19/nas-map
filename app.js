@@ -293,7 +293,25 @@ function load(d){
   const dt=d.generated?new Date(d.generated):null;
   $('host').textContent=(d.host||'NAS')+(dt&&!isNaN(dt)?' · analizado el '+dt.toLocaleString('es-ES',{dateStyle:'medium',timeStyle:'short'}):'')+' · '+d.volumes.length+' volúmenes, '+(d.disks||[]).length+' discos';
   $('err').textContent='';
+  errors(d);
   side(); render();
+}
+function errors(d){
+  const btn=$('errbadge'), panel=$('errpanel');
+  const vols=(d.volumes||[]).filter(v=>v.errors);
+  const total=vols.reduce((a,v)=>a+v.errors,0);
+  if(!total){ btn.hidden=true; panel.hidden=true; return }
+  btn.hidden=false;
+  btn.textContent=total+' fichero'+(total===1?'':'s')+' no legible'+(total===1?'':'s');
+  btn.setAttribute('aria-expanded', panel.hidden?'false':'true');
+  btn.onclick=()=>{ panel.hidden=!panel.hidden; btn.setAttribute('aria-expanded', panel.hidden?'false':'true') };
+  panel.innerHTML='';
+  vols.forEach(v=>{
+    const h=document.createElement('div'); h.innerHTML='<b></b>'; h.style.marginTop='6px';
+    h.querySelector('b').textContent=v.id+' — '+v.errors+' errores';
+    panel.appendChild(h);
+    (v.error_samples||[]).forEach(s=>{const p=document.createElement('div'); p.textContent=s; panel.appendChild(p)});
+  });
 }
 function readFile(f){const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);load(d);cacheSave(d)}catch(e){$('err').textContent='No he podido leer '+f.name+': '+e.message}};r.readAsText(f)}
 $('file').onchange=e=>{if(e.target.files[0])readFile(e.target.files[0]);e.target.value=''};

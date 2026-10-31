@@ -46,7 +46,6 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(26px,4vw,38px);let
 .bay .cap{font-family:var(--mono);font-size:11px;opacity:.75}
 .meter{height:4px;border-radius:2px;background:#ffffff1f;overflow:hidden;display:flex}
 .meter i{display:block;height:100%}
-.meter.used{margin-top:3px}
 .crumbs{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:13px;min-height:28px}
 .crumbs button{all:unset;cursor:pointer;padding:3px 8px;border-radius:6px;color:var(--muted)}
 .crumbs button:hover{background:var(--frame);color:var(--ink)}

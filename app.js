@@ -232,6 +232,7 @@ $('v-disk').onclick=()=>setView('disk'); $('v-vol').onclick=()=>setView('vol');
 function volColors(){const pal=['var(--accent)','#5b8def','#3fb68b','#c86bd1','#d9b13b','#e06b5b'];const m={};DATA.volumes.forEach((v,i)=>m[v.id]=pal[i%pal.length]);return m}
 function side(){
   const vc=volColors();
+  const usedOf=v=>v.vol.total?v.vol.used*(v.onDisk/v.vol.total):0;
   const ch=$('chassis'); ch.innerHTML='';
   const dn=trees.disk.k;
   if(!dn.length){ch.hidden=true}else{ch.hidden=false}
@@ -241,7 +242,6 @@ function side(){
     b.innerHTML='<div class="row"><span class="led'+(vols.length?'':' off')+'"></span><span></span></div><b></b><span class="cap"></span><div class="meter"></div>';
     b.querySelector('.row span:last-child').textContent=slot(d.disk);
     b.querySelector('b').textContent=d.disk.model||d.disk.id;
-    const usedOf=v=>v.vol.total?v.vol.used*(v.onDisk/v.vol.total):0;
     const used=vols.reduce((a,v)=>a+usedOf(v),0);
     b.querySelector('.cap').textContent=fmt(used)+' de '+fmt(d.disk.size)+(vols.length?' · '+vols.map(v=>v.name).join(', '):' · libre');
     const m=b.querySelector('.meter');
@@ -277,7 +277,7 @@ function side(){
       if(v.vol.errors){const e=document.createElement('span');e.className='pill warn';e.textContent=v.vol.errors+' ilegibles';line.appendChild(e)}
       b.appendChild(line)});
     const bar=document.createElement('div');bar.className='bar';
-    d.k.forEach(k=>{const i=document.createElement('i');i.style.width=(k.v/d.v*100)+'%';i.style.background=k.kind==='vol'?vc[k.name]:'var(--unalloc)';i.title=k.name;bar.appendChild(i)});
+    d.k.forEach(k=>{const i=document.createElement('i');const w=k.kind==='vol'?usedOf(k):k.v;i.style.width=(d.v?w/d.v*100:0)+'%';i.style.background=k.kind==='vol'?vc[k.name]:'var(--unalloc)';i.title=k.name;bar.appendChild(i)});
     b.appendChild(bar);
     const c=document.createElement('td');c.className='n';c.textContent=fmt(d.disk.size);
     tr.append(a,b,c);tb.appendChild(tr)});

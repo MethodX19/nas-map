@@ -6,6 +6,8 @@ Todo corre en el navegador. `nasmap.py` se ejecuta en el NAS por SSH, genera un 
 
 *A WinDirStat-style treemap for a Synology NAS. `nasmap.py` runs over SSH and dumps a JSON with the folder/disk/RAID layout; `index.html` renders it client-side, grouped by physical disk or by volume. Nothing leaves your machine — the commands below are copy-pasteable even if you don't read Spanish.*
 
+**Demo:** https://methodx19.github.io/nas-map/ (abre con datos de ejemplo hasta que cargues tu propio `nasmap.json`)
+
 ## Uso
 
 1. Activa SSH en DSM: **Panel de control → Terminal y SNMP**.

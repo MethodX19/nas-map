@@ -372,6 +372,21 @@ $('autosave').onclick=async()=>{
   catch(e){ setStatus('Guardado, pero no he podido leerla ahora mismo: '+e.message+' (revisa HTTPS, el proxy inverso y el token).','bad') }
 };
 
+$('refresh').onclick=async()=>{
+  const btn=$('refresh'); const label=btn.textContent;
+  const url=lsGet(LS_URL);
+  btn.textContent='Actualizando…'; btn.disabled=true;
+  let ok=false;
+  if(url){
+    try{ const d=await fetchAuto(url); load(d); cacheSave(d); setStatus('Actualizado automáticamente ahora mismo.','ok'); ok=true }
+    catch(e){ setStatus('No se pudo actualizar desde tu NAS: '+e.message,'bad') }
+  }
+  if(!ok) ok=await fsTryLoad(true);
+  if(!ok && !url && !fsHandle) setStatus('No tienes una URL ni un fichero local vinculados todavía — mira «Hazlo automático» más abajo.','bad');
+  btn.textContent=ok?'Hecho':(url||fsHandle?'Error':label); btn.disabled=false;
+  setTimeout(()=>{btn.textContent=label},1600);
+};
+
 async function autoBoot(){
   const url=lsGet(LS_URL);
   if($('autourl')) $('autourl').value=url||'';
